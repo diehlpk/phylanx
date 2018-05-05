@@ -214,27 +214,6 @@ namespace phylanx { namespace ast
     bool traverse(
         std::vector<ast::expression> const& expr, F&& f, Ts const&... ts);
 
-    //     template <typename F>
-    //     bool traverse(assignment const& op, F && f);
-    //
-    //     template <typename F>
-    //     bool traverse(variable_declaration const& op, F && f);
-    //
-    //     template <typename F>
-    //     bool traverse(statement const& op, F && f);
-    //
-    //     template <typename F>
-    //     bool traverse(if_statement const& op, F && f);
-    //
-    //     template <typename F>
-    //     bool traverse(while_statement const& op, F && f);
-    //
-    //     template <typename F>
-    //     bool traverse(return_statement const& op, F && f);
-    //
-    //     template <typename F>
-    //     bool traverse(function const& op, F && f);
-
     namespace detail
     {
         template <typename F>
@@ -358,6 +337,12 @@ namespace phylanx { namespace ast
                 {
                     if (traverse(fc.function_name, std::forward<F>(f), ts...))
                     {
+                        if (!fc.locality.empty())
+                        {
+                            if (!traverse(fc.locality, std::forward<F>(f), ts...))
+                                return;
+                        }
+
                         for (auto const& arg : fc.args)
                         {
                             if (!traverse(arg, std::forward<F>(f), ts...))

@@ -252,5 +252,14 @@ int main(int argc, char* argv[])
         "[[1, 2, 3], [2, 3, 1], [3, 1, 2]]\n"
     );
 
+    test_expression(
+        "function_call{attribute}(a, b, c)",
+        "function_call$1$1\n"
+            "attribute\n"
+            "a$1$26\n"
+            "b$1$29\n"
+            "c$1$32\n"
+    );
+
     return hpx::util::report_errors();
 }
