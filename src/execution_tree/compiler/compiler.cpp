@@ -441,10 +441,7 @@ namespace phylanx { namespace execution_tree { namespace compiler
                 auto at = cf->target<access_target>();
                 if (at == nullptr || at->target_name_ != "access-variable")
                 {
-//                     if (cf->target<access_argument>() == nullptr)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
 
                 if (at != nullptr)
@@ -486,7 +483,7 @@ namespace phylanx { namespace execution_tree { namespace compiler
             std::pair<iterator, iterator> pargs =
                 placeholders.equal_range("__2");
 
-            // handle only cases with one of two slicing arguments
+            // handle only cases with one or two slicing arguments
             std::size_t numargs = std::distance(pargs.first, pargs.second);
             if (numargs == 0 || numargs > 2)
             {
