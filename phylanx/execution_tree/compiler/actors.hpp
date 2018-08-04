@@ -256,17 +256,48 @@ namespace phylanx { namespace execution_tree { namespace compiler
         std::string name_;
     };
 
+    ///////////////////////////////////////////////////////////////////////////
+    struct entry_point
+    {
+        // execute the code represented by this entry point
+        primitive_argument_type run() const
+        {
+            return code_.run();
+        }
+
+        topology get_expression_topology() const
+        {
+            std::set<std::string> functions;
+            return code_.get_expression_topology(
+                std::move(functions));
+        }
+        topology get_expression_topology(
+            std::set<std::string>&& functions) const
+        {
+            return code_.get_expression_topology(
+                std::move(functions));
+        }
+        topology get_expression_topology(std::set<std::string>&& functions,
+            std::set<std::string>&& resolve_children) const
+        {
+            return code_.get_expression_topology(
+                std::move(functions), std::move(resolve_children));
+        }
+
+        std::string name_;      // the name of this entry point
+        function const& code_;  // the function representing this entry point
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
     // this must be a list to ensure stable references
     struct program
     {
+        using entry_points_type = std::pair<std::string, std::list<function>>;
+
         program() = default;
 
-        program(std::list<function> const& code)
-          : code_(code)
-        {
-        }
-        program(std::list<function>&& code)
-          : code_(std::move(code))
+        program(std::string name, std::list<function> code)
+          : code_(std::move(name), std::move(code))
         {
         }
 
@@ -275,7 +306,7 @@ namespace phylanx { namespace execution_tree { namespace compiler
         primitive_argument_type run() const
         {
             primitive_argument_type result;
-            for (auto const& f : code_)
+            for (auto const& f : code_.second)
             {
                 result = f.run();
             }
@@ -285,44 +316,68 @@ namespace phylanx { namespace execution_tree { namespace compiler
         ///////////////////////////////////////////////////////////////////////
         function& add_empty()
         {
-            scratchpad_.emplace_back(function{});
-            return scratchpad_.back();
+            auto it = scratchpad_.find(code_.first);
+            if (it == scratchpad_.end())
+            {
+                it = scratchpad_.insert(
+                    std::make_pair(code_.first, std::list<function>{})).first;
+            }
+            it->second.emplace_back(function{});
+            return it->second.back();
         }
         function& add(function&& f)
         {
-            scratchpad_.emplace_back(std::move(f));
-            return scratchpad_.back();
+            auto it = scratchpad_.find(code_.first);
+            if (it == scratchpad_.end())
+            {
+                it = scratchpad_.insert(
+                    std::make_pair(code_.first, std::list<function>{})).first;
+            }
+            it->second.emplace_back(std::move(f));
+            return it->second.back();
         }
 
-        function& add_entry_point(function&& f)
+        compiler::entry_point add_entry_point(function&& f)
         {
-            code_.emplace_back(std::move(f));
-            return code_.back();
+            code_.second.emplace_back(std::move(f));
+            return compiler::entry_point{code_.first, code_.second.back()};
         }
 
-        function const& entry_point() const
+        compiler::entry_point entry_point() const
         {
-            return code_.back();
+            return compiler::entry_point{code_.first, code_.second.back()};
         }
 
-        std::list<function> const& entry_points() const
+        entry_points_type const& entry_points() const
         {
             return code_;
         }
 
-        void store_entry_points()
+        void store_entry_points(std::string const& next_name)
         {
             // move all current entry points to scratch pad
-            scratchpad_.splice(scratchpad_.end(), code_);
+            if (!code_.first.empty())
+            {
+                auto it = scratchpad_.find(code_.first);
+                if (it == scratchpad_.end())
+                {
+                    it = scratchpad_.insert(
+                        std::make_pair(code_.first, std::list<function>{})).first;
+                }
+                it->second.splice(it->second.end(), code_.second);
+            }
+
+            // set name for next set of entry points
+            code_.first = next_name;
         }
 
         bool has_entry_points() const
         {
-            return !code_.empty();
+            return !code_.second.empty();
         }
 
         ///////////////////////////////////////////////////////////////////////
-        std::list<function> const& scratchpad() const
+        std::map<std::string, std::list<function>> const& scratchpad() const
         {
             return scratchpad_;
         }
@@ -332,27 +387,27 @@ namespace phylanx { namespace execution_tree { namespace compiler
         {
             HPX_ASSERT(has_entry_points());
             std::set<std::string> functions;
-            return entry_point().get_expression_topology(
+            return code_.second.back().get_expression_topology(
                 std::move(functions));
         }
         topology get_expression_topology(
             std::set<std::string>&& functions) const
         {
             HPX_ASSERT(has_entry_points());
-            return entry_point().get_expression_topology(
+            return code_.second.back().get_expression_topology(
                 std::move(functions));
         }
         topology get_expression_topology(std::set<std::string>&& functions,
             std::set<std::string>&& resolve_children) const
         {
             HPX_ASSERT(has_entry_points());
-            return entry_point().get_expression_topology(
+            return code_.second.back().get_expression_topology(
                 std::move(functions), std::move(resolve_children));
         }
 
     private:
-        std::list<function> code_;
-        std::list<function> scratchpad_;
+        entry_points_type code_;
+        std::map<std::string, std::list<function>> scratchpad_;
     };
 
     struct function_list
