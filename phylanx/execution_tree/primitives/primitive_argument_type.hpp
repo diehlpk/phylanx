@@ -7,12 +7,14 @@
 #define PHYLANX_PRIMITIVES_ARGUMENT_TYPE_JUL_23_2018_0149PM
 
 #include <phylanx/config.hpp>
-#include <phylanx/util/variant.hpp>
+#include <phylanx/ast/node.hpp>
 #include <phylanx/ir/node_data.hpp>
 #include <phylanx/ir/ranges.hpp>
+#include <phylanx/util/variant.hpp>
 
-#include <hpx/include/runtime.hpp>
 #include <hpx/include/lcos.hpp>
+#include <hpx/include/runtime.hpp>
+#include <hpx/runtime/serialization/serialization_fwd.hpp>
 
 #include <cstdint>
 #include <iosfwd>
@@ -52,12 +54,15 @@ namespace phylanx { namespace execution_tree
           : children_(std::move(names)), name_(std::move(name))
         {}
 
-        template <typename Archive>
-        void serialize(Archive & ar, unsigned)
-        {
-            ar & children_ & name_;
-        }
+    private:
+        friend class hpx::serialization::access;
 
+        PHYLANX_EXPORT void serialize(hpx::serialization::output_archive& ar,
+            unsigned);
+        PHYLANX_EXPORT void serialize(hpx::serialization::input_archive& ar,
+            unsigned);
+
+    public:
         std::vector<topology> children_;
         std::string name_;
     };
@@ -365,6 +370,14 @@ namespace phylanx { namespace execution_tree
         // variant::visit
         argument_value_type& variant() { return *this; }
         argument_value_type const& variant() const { return *this; }
+
+    private:
+        friend class hpx::serialization::access;
+
+        PHYLANX_EXPORT void serialize(hpx::serialization::output_archive& ar,
+            unsigned);
+        PHYLANX_EXPORT void serialize(hpx::serialization::input_archive& ar,
+            unsigned);
     };
 
     // a argument is valid of its not nil{}

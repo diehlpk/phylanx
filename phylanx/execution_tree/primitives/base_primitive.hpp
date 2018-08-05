@@ -20,7 +20,6 @@
 
 #include <hpx/include/runtime.hpp>
 #include <hpx/include/util.hpp>
-#include <hpx/include/serialization.hpp>
 
 #include <array>
 #include <cstddef>

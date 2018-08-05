@@ -11,6 +11,7 @@
 
 #include <hpx/include/util.hpp>
 #include <hpx/runtime/launch_policy.hpp>
+#include <hpx/runtime/serialization/serialization_fwd.hpp>
 #include <hpx/util/assert.hpp>
 
 #include <array>
@@ -254,6 +255,14 @@ namespace phylanx { namespace execution_tree { namespace compiler
 
         primitive_argument_type arg_;
         std::string name_;
+
+    private:
+        friend class hpx::serialization::access;
+
+        PHYLANX_EXPORT void serialize(hpx::serialization::output_archive& ar,
+            unsigned);
+        PHYLANX_EXPORT void serialize(hpx::serialization::input_archive& ar,
+            unsigned);
     };
 
     ///////////////////////////////////////////////////////////////////////////
@@ -266,7 +275,15 @@ namespace phylanx { namespace execution_tree { namespace compiler
         }
 
         std::string name_;      // the name of this entry point
-        function const& code_;  // the function representing this entry point
+        function code_;         // the function representing this entry point
+
+    private:
+        friend class hpx::serialization::access;
+
+        PHYLANX_EXPORT void serialize(hpx::serialization::output_archive& ar,
+            unsigned);
+        PHYLANX_EXPORT void serialize(hpx::serialization::input_archive& ar,
+            unsigned);
     };
 
     ///////////////////////////////////////////////////////////////////////////
@@ -386,7 +403,15 @@ namespace phylanx { namespace execution_tree { namespace compiler
                 std::move(functions), std::move(resolve_children));
         }
 
+
     private:
+        friend class hpx::serialization::access;
+
+        PHYLANX_EXPORT void serialize(hpx::serialization::output_archive& ar,
+            unsigned);
+        PHYLANX_EXPORT void serialize(hpx::serialization::input_archive& ar,
+            unsigned);
+
         entry_points_type code_;
         std::map<std::string, std::list<function>> scratchpad_;
     };
