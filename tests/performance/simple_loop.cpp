@@ -21,6 +21,11 @@ std::string const randstr = R"(
     call
 )";
 
+std::string const randstr_2d = R"(
+    define(call, size, random(list(size, size)))
+    call
+)";
+
 std::string const bench1 = R"(
     define(run, y, k, block(
         define(x, constant(0.0, k)),
@@ -49,41 +54,69 @@ std::string const bench2 = R"(
     run
 )";
 
+std::string const bench_dot = R"(
+    define(run, y, block(
+        dot(y, y)
+    ))
+    run
+)";
+
+std::string const bench_inverse = R"(
+    define(run, y, block(
+        inverse(y)
+    ))
+    run
+)";
+
+std::string const bench_add = R"(
+    define(run, y, block(
+        y+y
+    ))
+    run
+)";
+
 #define ARRAY_SIZE std::int64_t(100000)
 
 ///////////////////////////////////////////////////////////////////////////////
-template <typename Data>
-void benchmark(std::string const& name,
-    phylanx::execution_tree::compiler::function_list& snippets,
-    std::string const& codestr, Data const& y)
+void benchmark_1arg(std::string const& name,
+               phylanx::execution_tree::compiler::function_list& snippets,
+               std::string const& codestr, std::vector<std::int64_t> const& matrix_sizes)
 {
+    auto const& rand_code = phylanx::execution_tree::compile(randstr_2d, snippets);
+    auto rand = rand_code.run();
+
+
     auto const& code = phylanx::execution_tree::compile(codestr, snippets);
     auto bench = code.run();
 
+    std::uint64_t t;
+    std::cout<<"\n"<<name<<std::endl;
 
-    std::uint64_t t = hpx::util::high_resolution_clock::now();
+    for (std::int64_t i : matrix_sizes)
+    {
+        phylanx::ir::node_data<std::int64_t> matrix_size(i);
+        auto input_matrix = rand(matrix_size);
 
-    bench(y, ARRAY_SIZE);
+        t = hpx::util::high_resolution_clock::now();
+        bench(input_matrix);
+        t = hpx::util::high_resolution_clock::now() - t;
 
-    t = hpx::util::high_resolution_clock::now() - t;
-
-    std::cout << name << ": " << (t / 1e6) << " ms.\n";
+        std::cout << i << "       " << (t / 1e6) << " ms.\n";
+    }
 }
+
+
 
 int main(int argc, char* argv[])
 {
+    std::cout<<"\nnumber of threads: "<<hpx::get_os_thread_count()<<std::endl;
+
+    std::vector<std::int64_t> ARRAY_SIZES = {10, 100, 1000, 10000};
+
     phylanx::execution_tree::compiler::function_list snippets;
-
-    auto const& rand_code = phylanx::execution_tree::compile(randstr, snippets);
-    auto rand = rand_code.run();
-
-    phylanx::execution_tree::primitive_arguments_type dims{
-        phylanx::execution_tree::primitive_argument_type(ARRAY_SIZE)};
-
-    auto y = rand(dims);
-
-    benchmark("bench1", snippets, bench1, y);
-    benchmark("bench2", snippets, bench2, y);
+    benchmark_1arg("Dot product: ", snippets, bench_dot, ARRAY_SIZES);
+    benchmark_1arg("Inverse: ", snippets, bench_inverse, ARRAY_SIZES);
+    benchmark_1arg("Add: ", snippets, bench_add, ARRAY_SIZES);
 
     return 0;
 }

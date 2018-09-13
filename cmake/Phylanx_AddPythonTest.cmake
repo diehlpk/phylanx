@@ -96,3 +96,6 @@ macro(add_phylanx_python_regression_test category name)
   add_phylanx_python_test("tests.regressions.python.${category}" ${name} ${ARGN})
 endmacro()
 
+macro(add_phylanx_python_performance_test category name)
+  add_phylanx_python_test("tests.performance.${category}" ${name} ${ARGN})
+endmacro()

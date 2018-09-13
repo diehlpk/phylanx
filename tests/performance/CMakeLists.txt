@@ -6,6 +6,8 @@
 set(tests
     simple_loop
    )
+set(py_tests
+    perf_test)
 
 foreach(test ${tests})
   set(sources ${test}.cpp)
@@ -22,5 +24,23 @@ foreach(test ${tests})
   add_phylanx_pseudo_target(tests.performance.${test})
   add_phylanx_pseudo_dependencies(tests.performance tests.performance.${test})
   add_phylanx_pseudo_dependencies(tests.performance.${test} ${test}_test_exe)
+
+endforeach()
+
+foreach(test ${py_tests})
+  set(script ${test}.py)
+
+  add_phylanx_python_performance_test("python" ${test}
+          SCRIPT ${script}
+          FOLDER "Tests/Performance"
+          DEPENDS phylanx_py python_setup
+          WORKING_DIRECTORY ${PHYLANX_PYTHON_EXTENSION_LOCATION}
+          ENVIRONMENT "PYTHONPATH=${PHYLANX_PYTHON_EXTENSION_LOCATION}")
+
+  add_phylanx_pseudo_target(tests.performance.${test}_py)
+  add_phylanx_pseudo_dependencies(
+          tests.performance tests.performance.${test}_py)
+  add_phylanx_pseudo_dependencies(
+          tests.performance.${test}_py ${test}_test_py)
 
 endforeach()
